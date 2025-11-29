@@ -1,12 +1,12 @@
 # Time Consensus Simulation
 
-This project is an interactive web-based simulation of a thought experiment concerning the nature of time, memory, and consensus. It was inspired by a user's a thought experiment to explore how individual agents with flawed "memories" might collaborate to reconstruct a shared "reality."
+This project is an interactive web-based simulation of a thought experiment concerning the nature of time, memory, and consensus. It was inspired by a thought experiment I had last year... to explore how individual agents with flawed "memories" might collaborate to reconstruct a shared "reality." I used Rust and a compression algo for that... Anyway, some recap...
 
 ## The Concept
 
-Humans perceive time by organizing events chronologically. This mental model is our map of reality. What if this map was scrambled?
+Humans perceive time by organising events chronologically. This mental model is our map of reality. What if this map was scrambled?
 
-This simulation explores that question by creating "agents" with scrambled text-based memories of an original "external world." It visualizes their process of:
+This simulation explores that question by creating "agents" with scrambled text-based memories of an original "external world." It visualises their process of:
 
 1.  **Individual Verification:** Each agent compares its own scrambled memory to the true external world to gauge its own accuracy.
 2.  **Reaching Consensus:** Agents communicate their findings to collectively decide on the most accurate version of reality.
@@ -39,7 +39,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## How to Use the Simulation
 
-The application interface is divided into two main sections: the **Control Panel** on the left and the **Visualization Area** on the right.
+The application interface is divided into two main sections: the **Control Panel** on the left and the **Visualisation Area** on the right.
 
 ### Control Panel
 
@@ -52,12 +52,12 @@ This is where you configure the simulation:
 *   **Start Simulation:** Begins the simulation process. The controls will be disabled while a simulation is running.
 *   **Reset Simulation:** Stops the current simulation and resets all parameters and visuals to their default state. This button is only active when a simulation is running or has completed.
 
-### Visualization Area
+### Visualisation Area
 
 This area shows the simulation as it unfolds in real-time.
 
 *   **External World:** The ground truth text is displayed at the top for reference.
-*   **Agents:** Each agent is represented by a card. The card's color and content will change as it moves through the simulation stages:
+*   **Agents:** Each agent is represented by a card. The card's colour and content will change as it moves through the simulation stages:
     *   **Red Tint (Scrambled):** The agent's initial, scrambled memory.
     *   **Yellow Tint (Verified):** The agent has compared its memory to the external world and calculated a similarity score.
     *   **Green Tint (Consensus):** The simulation has ended, and this agent is part of the final consensus group. The "Consensus Leader" is the agent whose memory was chosen as the most accurate.
