@@ -6,38 +6,9 @@ import SimulationVisualizer from "../components/SimulationVisualizer";
 import EventLog from "../components/EventLog";
 import { compareTwoStrings } from 'string-similarity';
 
-// Define Agent interface and export it for use in other components
-export interface Agent {
-  agentId: number;
-  memory: string;
-  status: string; // e.g., "Scrambled", "Verifying", "Verified", "Communicating", "Consensus"
-  similarityScore?: number; // Similarity to the external world
-  timestamp?: string;
-}
-
-// Utility function to scramble text
-const scrambleText = (text: string): string => {
-  if (text.length < 5) return text.split('').sort(() => 0.5 - Math.random()).join(''); // Simple scramble for short texts
-
-  let scrambled = text;
-  // Introduce some errors: deletions, insertions, substitutions
-  const errorCount = Math.floor(text.length * 0.1); // 10% errors
-
-  for (let i = 0; i < errorCount; i++) {
-    const type = Math.random();
-    const index = Math.floor(Math.random() * scrambled.length);
-    const char = String.fromCharCode(97 + Math.floor(Math.random() * 26)); // Random lowercase letter
-
-    if (type < 0.33 && scrambled.length > 1) { // Deletion
-      scrambled = scrambled.substring(0, index) + scrambled.substring(index + 1);
-    } else if (type < 0.66) { // Insertion
-      scrambled = scrambled.substring(0, index) + char + scrambled.substring(index);
-    } else { // Substitution
-      scrambled = scrambled.substring(0, index) + char + scrambled.substring(index + 1);
-    }
-  }
-  return scrambled;
-};
+// NEW IMPORTS
+import { Agent } from "../types/agent";
+import { scrambleText } from "../utils/scrambleText";
 
 export default function Home() {
   const [numAgents, setNumAgents] = useState(3);

@@ -1,7 +1,7 @@
 // src/components/SimulationVisualizer.tsx
 import React from 'react';
 import AgentCard from './AgentCard';
-import { Agent } from '../app/page'; // Assuming Agent interface is exported from page.tsx
+import { Agent } from '../types/agent'; 
 
 interface SimulationVisualizerProps {
   externalWorld: string;
