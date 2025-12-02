@@ -8,9 +8,9 @@ interface ControlsProps {
   externalWorld: string;
   setExternalWorld: (text: string) => void;
   onStartSimulation: () => void;
-  onGenerateExternalWorld: () => void;
-  onResetSimulation: () => void; // New prop
-  simulationRunning: boolean; // New prop
+  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onResetSimulation: () => void;
+  simulationRunning: boolean;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -19,9 +19,9 @@ const Controls: React.FC<ControlsProps> = ({
   externalWorld,
   setExternalWorld,
   onStartSimulation,
-  onGenerateExternalWorld,
-  onResetSimulation, // Destructure new prop
-  simulationRunning, // Destructure new prop
+  onImageUpload,
+  onResetSimulation,
+  simulationRunning,
 }) => {
   return (
     <div className="card mb-3">
@@ -35,7 +35,7 @@ const Controls: React.FC<ControlsProps> = ({
               max={10}
               value={numAgents}
               onChange={(e) => setNumAgents(parseInt(e.target.value))}
-              disabled={simulationRunning} // Disable when simulation is running
+              disabled={simulationRunning}
             />
           </Form.Group>
 
@@ -46,19 +46,27 @@ const Controls: React.FC<ControlsProps> = ({
               rows={5}
               value={externalWorld}
               onChange={(e) => setExternalWorld(e.target.value)}
-              placeholder="Enter the external world text here, or auto-generate."
-              disabled={simulationRunning} // Disable when simulation is running
+              placeholder="Enter the external world text here."
+              disabled={simulationRunning}
+            />
+          </Form.Group>
+
+          {/* New Form.Group for Image Upload */}
+          <Form.Group className="mb-3" controlId="imageUpload">
+            <Form.Label>Upload Image</Form.Label>
+            <Form.Control
+              type="file"
+              accept="image/*"
+              onChange={onImageUpload}
+              disabled={simulationRunning}
             />
           </Form.Group>
 
           <div className="d-grid gap-2 mb-3">
-            <Button variant="secondary" onClick={onGenerateExternalWorld} disabled={simulationRunning}>
-              Auto-Generate External World
-            </Button>
             <Button variant="primary" onClick={onStartSimulation} disabled={simulationRunning}>
               Start Simulation
             </Button>
-            <Button variant="warning" onClick={onResetSimulation} disabled={!simulationRunning}> {/* Enable only when simulation is running */}
+            <Button variant="warning" onClick={onResetSimulation} disabled={!simulationRunning}>
               Reset Simulation
             </Button>
           </div>
@@ -69,4 +77,5 @@ const Controls: React.FC<ControlsProps> = ({
 };
 
 export default Controls;
+
 
