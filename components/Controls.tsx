@@ -46,7 +46,7 @@ const Controls: React.FC<ControlsProps> = ({
               rows={5}
               value={externalWorld}
               onChange={(e) => setExternalWorld(e.target.value)}
-              placeholder="Enter the external world text here."
+              placeholder="Describe your reality here..."
               disabled={simulationRunning}
             />
           </Form.Group>

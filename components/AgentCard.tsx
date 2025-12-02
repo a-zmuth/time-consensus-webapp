@@ -17,6 +17,8 @@ const AgentCard: React.FC<AgentCardProps> = ({ agentId, memory, isImage, status,
     switch(status) {
       case 'Scrambled':
         return 'bg-danger-subtle';
+      case 'Refining':
+        return 'bg-info-subtle';
       case 'Verifying':
       case 'Verified':
         return 'bg-warning-subtle';
@@ -32,6 +34,8 @@ const AgentCard: React.FC<AgentCardProps> = ({ agentId, memory, isImage, status,
     switch(status) {
       case 'Scrambled':
         return 'danger';
+      case 'Refining':
+        return 'info';
       case 'Verifying':
       case 'Verified':
         return 'warning';

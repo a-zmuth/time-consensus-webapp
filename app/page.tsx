@@ -9,25 +9,36 @@ import { compareTwoStrings } from 'string-similarity';
 // NEW IMPORTS
 import { Agent } from "../types/agent";
 import { scrambleText } from "../utils/scrambleText";
-import { scrambleImage } from "../utils/scrambleImage"; // Import scrambleImage
-import { compareImages } from "../utils/compareImages"; // Import compareImages
+import { scrambleImage } from "../utils/scrambleImage";
+import { compareImages } from "../utils/compareImages";
+import { swapImageBlocks } from "../utils/swapImageBlocks";
+
+// Simulation Steps:
+// 0: Idle
+// 1: Scramble
+// 2: Verify
+// 3: Collaborative Refinement
+// 4: Final Consensus
+// 5: Complete
+const COMMUNICATION_ROUNDS = 5;
 
 export default function Home() {
   const [numAgents, setNumAgents] = useState(3);
-  const [externalWorld, setExternalWorld] = useState<string>("The quick brown fox jumps over the lazy dog. This is a classic pangram used to display all letters of the alphabet.");
-  const [isExternalWorldImage, setIsExternalWorldImage] = useState<boolean>(false); // New state for image flag
+  const [externalWorld, setExternalWorld] = useState<string>("");
+  const [isExternalWorldImage, setIsExternalWorldImage] = useState<boolean>(false);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
   const [simulationRunning, setSimulationRunning] = useState(false);
-  const [simulationStep, setSimulationStep] = useState(0); // 0: Idle, 1: Scramble, 2: Verify, 3: Consensus, 4: Complete
+  const [simulationStep, setSimulationStep] = useState(0);
+  const [currentRound, setCurrentRound] = useState(0); // For communication rounds
 
   useEffect(() => {
-    // This effect will trigger when simulationStep changes to advance the simulation
     if (!simulationRunning || simulationStep === 0) return;
 
     const runSimulationStep = async () => {
       if (simulationStep === 1) { // Scramble Memories
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Stage 1: Scrambling Agent Memories...`]);
+        setCurrentRound(0);
         const initialAgents: Agent[] = await Promise.all(
           Array.from({ length: numAgents }, async (_, i) => {
             const scrambledMemory = isExternalWorldImage
@@ -36,70 +47,100 @@ export default function Home() {
             return {
               agentId: i + 1,
               memory: scrambledMemory,
-              isImage: isExternalWorldImage, // Set isImage for the agent
+              isImage: isExternalWorldImage,
               status: "Scrambled",
               timestamp: new Date().toLocaleTimeString(),
             };
           })
         );
         setAgents(initialAgents);
-        await new Promise(resolve => setTimeout(resolve, 500)); // REDUCED DELAY
+        await new Promise(resolve => setTimeout(resolve, 500));
         setSimulationStep(2);
-      } else if (simulationStep === 2) { // Individual Verification
-        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Stage 2: Agents Performing Individual Verification...`]);
-        const verifiedAgents = await Promise.all(agents.map(async (agent) => {
-          await new Promise(resolve => setTimeout(resolve, 50)); // REDUCED DELAY
-          const score = agent.isImage
-            ? await compareImages(agent.memory, externalWorld)
-            : compareTwoStrings(agent.memory, externalWorld);
-          setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Agent ${agent.agentId} verified its memory, similarity: ${score.toFixed(2)}%.`]);
-          return {
-            ...agent,
-            similarityScore: score,
-            status: "Verified",
-            timestamp: new Date().toLocaleTimeString(),
-          };
-        }));
-        setAgents(verifiedAgents);
-        await new Promise(resolve => setTimeout(resolve, 500)); // REDUCED DELAY
-        setSimulationStep(3);
-      } else if (simulationStep === 3) { // Consensus (simplified for now)
-        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Stage 3: Agents Communicating for Consensus...`]);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // REDUCED DELAY
+      } else if (simulationStep === 2) { // Verification
+        setLogs(prev => {
+          const verificationType = currentRound === 0 ? "Initial" : `Post-Round ${currentRound}`;
+          return [...prev, `[${new Date().toLocaleTimeString()}] Stage 2: Agents Performing ${verificationType} Verification...`];
+        });
+        
+        setAgents(prevAgents => {
+          const verifyPromises = prevAgents.map(async (agent) => {
+            const score = agent.isImage
+              ? await compareImages(agent.memory, externalWorld)
+              : compareTwoStrings(agent.memory, externalWorld) * 100;
+            setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Agent ${agent.agentId} verified, similarity: ${score.toFixed(2)}%.`]);
+            return { ...agent, similarityScore: score, status: "Verified" };
+          });
+          Promise.all(verifyPromises).then(verifiedAgents => {
+            setAgents(verifiedAgents);
+            if (currentRound < COMMUNICATION_ROUNDS) {
+              setSimulationStep(3);
+            } else {
+              setSimulationStep(4);
+            }
+          });
+          return prevAgents; // No immediate change to agents state here
+        });
+      } else if (simulationStep === 3) { // Collaborative Refinement
+        setCurrentRound(prevRound => {
+          const round = prevRound + 1;
+          setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Stage 3: Collaborative Refinement Round ${round}/${COMMUNICATION_ROUNDS}...`]);
+          
+          setAgents(prevAgents => {
+            let updatedAgents = [...prevAgents];
+            const swapPromises = [];
 
-        // Simple consensus: agent with highest similarity "wins"
-        const bestAgent = agents.reduce((prev, current) =>
-          (prev.similarityScore || 0) > (current.similarityScore || 0) ? prev : current
-        );
+            for (let i = 0; i < updatedAgents.length; i++) {
+              const agentA = updatedAgents[i];
+              const agentB = updatedAgents[Math.floor(Math.random() * updatedAgents.length)];
 
+              if (agentA.agentId !== agentB.agentId && (agentB.similarityScore || 0) > (agentA.similarityScore || 0)) {
+                setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Agent ${agentA.agentId} is learning from Agent ${agentB.agentId}.`]);
+                if (agentA.isImage) {
+                  const promise = swapImageBlocks(agentA.memory, agentB.memory).then(([newMemoryA, newMemoryB]) => {
+                    const indexA = updatedAgents.findIndex(a => a.agentId === agentA.agentId);
+                    const indexB = updatedAgents.findIndex(a => a.agentId === agentB.agentId);
+                    if (indexA !== -1) updatedAgents[indexA] = { ...updatedAgents[indexA], memory: newMemoryA, status: "Refining" };
+                    if (indexB !== -1) updatedAgents[indexB] = { ...updatedAgents[indexB], memory: newMemoryB };
+                  });
+                  swapPromises.push(promise);
+                } else {
+                  const indexA = updatedAgents.findIndex(a => a.agentId === agentA.agentId);
+                  if (indexA !== -1) updatedAgents[indexA] = { ...updatedAgents[indexA], memory: agentB.memory, status: "Refining" };
+                }
+              }
+            }
+            Promise.all(swapPromises).then(() => {
+              setAgents(updatedAgents);
+              setSimulationStep(2);
+            });
+            return prevAgents;
+          });
+          return round;
+        });
+      } else if (simulationStep === 4) { // Final Consensus
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Stage 4: Reaching Final Consensus...`]);
+        const bestAgent = agents.reduce((prev, current) => (prev.similarityScore || 0) > (current.similarityScore || 0) ? prev : current);
+        
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Consensus Reached: Agent ${bestAgent.agentId} has the most accurate memory.`]);
-        // Only log substring if it's text, otherwise it's a data URL
-        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Final Consensus Memory: "${bestAgent.isImage ? "Image Data" : bestAgent.memory.substring(0, 100)}..."`]);
-
-        const finalConsensusScore = bestAgent.isImage
-          ? await compareImages(bestAgent.memory, externalWorld)
-          : compareTwoStrings(bestAgent.memory, externalWorld);
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Final Consensus Memory: ${bestAgent.isImage ? "Image Data" : `"${bestAgent.memory.substring(0, 100)}..."`}`]);
+        const finalConsensusScore = bestAgent.similarityScore || 0;
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Consensus Memory Similarity to External World: ${finalConsensusScore.toFixed(2)}%.`]);
 
-        setAgents(agents.map(agent => ({
-          ...agent,
-          status: agent.agentId === bestAgent.agentId ? "Consensus Leader" : "Consensus",
-          timestamp: new Date().toLocaleTimeString(),
-        })));
-
+        setAgents(prevAgents => prevAgents.map(agent => ({ ...agent, status: agent.agentId === bestAgent.agentId ? "Consensus Leader" : "Consensus" })));
         setSimulationRunning(false);
-        setSimulationStep(4);
-      } else if (simulationStep === 4) { // Simulation Complete
+        setSimulationStep(5);
+      } else if (simulationStep === 5) { // Complete
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Simulation Complete.`]);
       }
     };
 
     runSimulationStep();
-  }, [simulationRunning, simulationStep, numAgents, externalWorld, isExternalWorldImage]); // Added isExternalWorldImage to dependencies
+  }, [simulationRunning, simulationStep, numAgents, externalWorld, isExternalWorldImage]); // Removed agents and currentRound
+
 
   const handleStartSimulation = () => {
-    setLogs([]); // Clear logs on new simulation
-    setAgents([]); // Clear agents on new simulation
+    setLogs([]);
+    setAgents([]);
     setSimulationRunning(true);
     setSimulationStep(1); // Start scrambling
   };
@@ -109,7 +150,7 @@ export default function Home() {
     setAgents([]);
     setSimulationRunning(false);
     setSimulationStep(0);
-    setExternalWorld("The quick brown fox jumps over the lazy dog. This is a classic pangram used to display all letters of the alphabet."); // Reset to default text
+    setExternalWorld(""); // Reset to empty string
     setIsExternalWorldImage(false); // Reset image flag
     setNumAgents(3); // Reset to default
   };
@@ -160,4 +201,3 @@ export default function Home() {
     </div>
   );
 }
-
