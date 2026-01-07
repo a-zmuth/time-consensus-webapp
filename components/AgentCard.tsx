@@ -6,12 +6,13 @@ interface AgentCardProps {
   agentId: number;
   memory: string;
   isImage: boolean; // New prop
+  isVideo?: boolean;
   status: string; // e.g., "Scrambled", "Verifying", "Consensus"
   similarityScore?: number;
   timestamp?: string;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agentId, memory, isImage, status, similarityScore, timestamp }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agentId, memory, isImage, isVideo, status, similarityScore, timestamp }) => {
 
   const getStatusColorClass = () => {
     switch(status) {
@@ -59,6 +60,10 @@ const AgentCard: React.FC<AgentCardProps> = ({ agentId, memory, isImage, status,
           {isImage ? (
             <div className="text-center my-2"> {/* Center image and add margin */}
               <img src={memory} alt={`Agent ${agentId} memory`} style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'contain' }} className="img-fluid border rounded" />
+            </div>
+          ) : isVideo ? (
+            <div className="text-center my-2">
+              <video src={memory} controls style={{ maxWidth: '100%', maxHeight: '100px' }} className="img-fluid border rounded" />
             </div>
           ) : (
             <p className="card-text border p-2 rounded bg-light small text-break" style={{ maxHeight: '100px', overflowY: 'auto' }}>

@@ -12,6 +12,9 @@ import { scrambleText } from "../utils/scrambleText";
 import { scrambleImage } from "../utils/scrambleImage";
 import { compareImages } from "../utils/compareImages";
 import { swapImageBlocks } from "../utils/swapImageBlocks";
+import { scrambleVideo } from "../utils/scrambleVideo"; // NEW IMPORT
+import { compareVideos } from "../utils/compareVideos"; // NEW IMPORT
+import { swapVideoBlocks } from "../utils/swapVideoBlocks"; // NEW IMPORT
 
 // Simulation Steps:
 // 0: Idle
@@ -26,6 +29,7 @@ export default function Home() {
   const [numAgents, setNumAgents] = useState(3);
   const [externalWorld, setExternalWorld] = useState<string>("");
   const [isExternalWorldImage, setIsExternalWorldImage] = useState<boolean>(false);
+  const [isExternalWorldVideo, setIsExternalWorldVideo] = useState<boolean>(false);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
   const [simulationRunning, setSimulationRunning] = useState(false);
@@ -43,11 +47,14 @@ export default function Home() {
           Array.from({ length: numAgents }, async (_, i) => {
             const scrambledMemory = isExternalWorldImage
               ? await scrambleImage(externalWorld)
+              : isExternalWorldVideo
+              ? await scrambleVideo(externalWorld) // Use scrambleVideo for video
               : scrambleText(externalWorld);
             return {
               agentId: i + 1,
               memory: scrambledMemory,
               isImage: isExternalWorldImage,
+              isVideo: isExternalWorldVideo,
               status: "Scrambled",
               timestamp: new Date().toLocaleTimeString(),
             };
@@ -66,6 +73,8 @@ export default function Home() {
           const verifyPromises = prevAgents.map(async (agent) => {
             const score = agent.isImage
               ? await compareImages(agent.memory, externalWorld)
+              : agent.isVideo
+              ? await compareVideos(agent.memory, externalWorld) // Use compareVideos for video
               : compareTwoStrings(agent.memory, externalWorld) * 100;
             setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Agent ${agent.agentId} verified, similarity: ${score.toFixed(2)}%.`]);
             return { ...agent, similarityScore: score, status: "Verified" };
@@ -103,6 +112,14 @@ export default function Home() {
                     if (indexB !== -1) updatedAgents[indexB] = { ...updatedAgents[indexB], memory: newMemoryB };
                   });
                   swapPromises.push(promise);
+                } else if (agentA.isVideo) { // Handle video collaborative refinement
+                  const promise = swapVideoBlocks(agentA.memory, agentB.memory).then(([newMemoryA, newMemoryB]) => {
+                    const indexA = updatedAgents.findIndex(a => a.agentId === agentA.agentId);
+                    const indexB = updatedAgents.findIndex(a => a.agentId === agentB.agentId);
+                    if (indexA !== -1) updatedAgents[indexA] = { ...updatedAgents[indexA], memory: newMemoryA, status: "Refining" };
+                    if (indexB !== -1) updatedAgents[indexB] = { ...updatedAgents[indexB], memory: newMemoryB };
+                  });
+                  swapPromises.push(promise);
                 } else {
                   const indexA = updatedAgents.findIndex(a => a.agentId === agentA.agentId);
                   if (indexA !== -1) updatedAgents[indexA] = { ...updatedAgents[indexA], memory: agentB.memory, status: "Refining" };
@@ -122,7 +139,7 @@ export default function Home() {
         const bestAgent = agents.reduce((prev, current) => (prev.similarityScore || 0) > (current.similarityScore || 0) ? prev : current);
         
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Consensus Reached: Agent ${bestAgent.agentId} has the most accurate memory.`]);
-        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Final Consensus Memory: ${bestAgent.isImage ? "Image Data" : `"${bestAgent.memory.substring(0, 100)}..."`}`]);
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Final Consensus Memory: ${bestAgent.isImage || bestAgent.isVideo ? "Media Data" : `"${bestAgent.memory.substring(0, 100)}..."`}`]);
         const finalConsensusScore = bestAgent.similarityScore || 0;
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Consensus Memory Similarity to External World: ${finalConsensusScore.toFixed(2)}%.`]);
 
@@ -135,7 +152,7 @@ export default function Home() {
     };
 
     runSimulationStep();
-  }, [simulationRunning, simulationStep, numAgents, externalWorld, isExternalWorldImage]); // Removed agents and currentRound
+  }, [simulationRunning, simulationStep, numAgents, externalWorld, isExternalWorldImage, isExternalWorldVideo]); // Removed agents and currentRound
 
 
   const handleStartSimulation = () => {
@@ -152,12 +169,14 @@ export default function Home() {
     setSimulationStep(0);
     setExternalWorld(""); // Reset to empty string
     setIsExternalWorldImage(false); // Reset image flag
+    setIsExternalWorldVideo(false);
     setNumAgents(3); // Reset to default
   };
 
   const handleSetExternalWorld = (text: string) => {
     setExternalWorld(text);
     setIsExternalWorldImage(false); // It's text, so set image flag to false
+    setIsExternalWorldVideo(false);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,7 +187,22 @@ export default function Home() {
     reader.onloadend = () => {
       setExternalWorld(reader.result as string); // Set externalWorld to the data URL
       setIsExternalWorldImage(true); // Set image flag to true
+      setIsExternalWorldVideo(false);
       setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Image uploaded and set as External World.`]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setExternalWorld(reader.result as string); // Set externalWorld to the data URL
+      setIsExternalWorldImage(false);
+      setIsExternalWorldVideo(true);
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Video uploaded and set as External World.`]);
     };
     reader.readAsDataURL(file);
   };
@@ -185,6 +219,7 @@ export default function Home() {
             setExternalWorld={handleSetExternalWorld} // Use wrapper function
             onStartSimulation={handleStartSimulation}
             onImageUpload={handleImageUpload}
+            onVideoUpload={handleVideoUpload}
             onResetSimulation={handleResetSimulation}
             simulationRunning={simulationRunning}
           />
@@ -193,6 +228,7 @@ export default function Home() {
           <SimulationVisualizer
             externalWorld={externalWorld}
             isExternalWorldImage={isExternalWorldImage} // Pass image flag
+            isExternalWorldVideo={isExternalWorldVideo}
             agents={agents}
           />
           <EventLog logs={logs} />

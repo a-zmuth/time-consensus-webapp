@@ -5,21 +5,24 @@ import { Agent } from '../types/agent';
 
 interface SimulationVisualizerProps {
   externalWorld: string;
-  isExternalWorldImage: boolean; // New prop
+  isExternalWorldImage: boolean;
+  isExternalWorldVideo: boolean;
   agents: Agent[];
 }
 
-const SimulationVisualizer: React.FC<SimulationVisualizerProps> = ({ externalWorld, isExternalWorldImage, agents }) => {
+const SimulationVisualizer: React.FC<SimulationVisualizerProps> = ({ externalWorld, isExternalWorldImage, isExternalWorldVideo, agents }) => {
   return (
     <div className="simulation-visualizer">
       <h4 className="mb-3">External World:</h4>
       {isExternalWorldImage ? (
-        // Render image if it's an image
         <div className="border p-3 mb-4 text-center">
           <img src={externalWorld} alt="External World" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} />
         </div>
+      ) : isExternalWorldVideo ? (
+        <div className="border p-3 mb-4 text-center">
+          <video src={externalWorld} controls style={{ maxWidth: '100%', maxHeight: '200px' }} />
+        </div>
       ) : (
-        // Render text if it's text
         <p className="border p-3 mb-4">{externalWorld}</p>
       )}
 

@@ -9,6 +9,7 @@ interface ControlsProps {
   setExternalWorld: (text: string) => void;
   onStartSimulation: () => void;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onVideoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onResetSimulation: () => void;
   simulationRunning: boolean;
 }
@@ -20,6 +21,7 @@ const Controls: React.FC<ControlsProps> = ({
   setExternalWorld,
   onStartSimulation,
   onImageUpload,
+  onVideoUpload,
   onResetSimulation,
   simulationRunning,
 }) => {
@@ -58,6 +60,17 @@ const Controls: React.FC<ControlsProps> = ({
               type="file"
               accept="image/*"
               onChange={onImageUpload}
+              disabled={simulationRunning}
+            />
+          </Form.Group>
+
+          {/* New Form.Group for Video Upload */}
+          <Form.Group className="mb-3" controlId="videoUpload">
+            <Form.Label>Upload Video</Form.Label>
+            <Form.Control
+              type="file"
+              accept="video/*"
+              onChange={onVideoUpload}
               disabled={simulationRunning}
             />
           </Form.Group>
